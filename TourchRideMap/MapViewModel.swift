@@ -11,10 +11,13 @@ import CoreLocation
 
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var region: MKCoordinateRegion
+    @Published var errorMessage: String? = nil // For error handling
+    @Published var recentSearches: [String] = [] // Store recent searches
+    
     private let locationManager = CLLocationManager()
+    private let geocoder = CLGeocoder()
 
     override init() {
-        // Default region (TourchRide HQ)
         self.region = MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: 29.739017, longitude: -95.774269),
             span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
@@ -38,7 +41,36 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Failed to find user's location: \(error.localizedDescription)")
+    func searchLocation(query: String) {
+        geocoder.geocodeAddressString(query) { [weak self] placemarks, error in
+            guard let self = self else { return }
+            if let error = error {
+                self.errorMessage = "Error geocoding: \(error.localizedDescription)"
+                return
+            }
+            guard let coordinate = placemarks?.first?.location?.coordinate else {
+                self.errorMessage = "No location found for '\(query)'"
+                return
+            }
+            DispatchQueue.main.async {
+                self.errorMessage = nil // Clear any previous error
+                self.region = MKCoordinateRegion(
+                    center: coordinate,
+                    span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
+                )
+                self.addRecentSearch(query)
+            }
+        }
+    }
+    
+    // Add the search query to recent searches
+    func addRecentSearch(_ query: String) {
+        if !recentSearches.contains(query) {
+            recentSearches.insert(query, at: 0)
+        }
+        // Limit to the last 5 searches
+        if recentSearches.count > 5 {
+            recentSearches.removeLast()
+        }
     }
 }

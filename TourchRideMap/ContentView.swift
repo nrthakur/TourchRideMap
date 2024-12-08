@@ -9,17 +9,13 @@ import SwiftUI
 import MapKit
 
 struct ContentView: View {
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 29.739017, longitude: -95.774269), // TourchRide HQ
-        span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
-    )
+    @StateObject private var viewModel = MapViewModel()
 
     var body: some View {
-        Map(coordinateRegion: $region)
-            .edgesIgnoringSafeArea(.all) // Makes the map full screen
+        Map(coordinateRegion: $viewModel.region)
+            .edgesIgnoringSafeArea(.all)
     }
 }
-
 
 #Preview {
     ContentView()

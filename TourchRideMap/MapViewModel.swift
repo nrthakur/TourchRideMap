@@ -11,8 +11,9 @@ import CoreLocation
 
 class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
     @Published var region: MKCoordinateRegion
-    @Published var errorMessage: String? = nil // For error handling
-    @Published var recentSearches: [String] = [] // Store recent searches
+    @Published var errorMessage: String? = nil
+    @Published var recentSearches: [String] = []
+    @Published var addressSuggestions: [String] = [] // New for suggestions
     
     private let locationManager = CLLocationManager()
     private let geocoder = CLGeocoder()
@@ -53,7 +54,7 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
                 return
             }
             DispatchQueue.main.async {
-                self.errorMessage = nil // Clear any previous error
+                self.errorMessage = nil
                 self.region = MKCoordinateRegion(
                     center: coordinate,
                     span: MKCoordinateSpan(latitudeDelta: 0.05, longitudeDelta: 0.05)
@@ -62,13 +63,22 @@ class MapViewModel: NSObject, ObservableObject, CLLocationManagerDelegate {
             }
         }
     }
-    
-    // Add the search query to recent searches
+
+    func fetchSuggestions(query: String) {
+        geocoder.geocodeAddressString(query) { [weak self] placemarks, error in
+            guard let self = self else { return }
+            if error != nil {
+                self.addressSuggestions = []
+                return
+            }
+            self.addressSuggestions = placemarks?.compactMap { $0.name } ?? []
+        }
+    }
+
     func addRecentSearch(_ query: String) {
         if !recentSearches.contains(query) {
             recentSearches.insert(query, at: 0)
         }
-        // Limit to the last 5 searches
         if recentSearches.count > 5 {
             recentSearches.removeLast()
         }

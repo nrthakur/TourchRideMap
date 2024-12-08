@@ -11,16 +11,21 @@ import MapKit
 struct ContentView: View {
     @StateObject private var viewModel = MapViewModel()
     @State private var searchText = ""
-
+    
     var body: some View {
         VStack {
             // Search Bar
             HStack {
                 TextField("Search for a location", text: $searchText)
+                    .onChange(of: searchText) { newValue in
+                        viewModel.fetchSuggestions(query: newValue)
+                    }
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding(.horizontal)
+                
                 Button(action: {
                     viewModel.searchLocation(query: searchText)
+                    searchText = ""  // Clear the text field after search
                 }) {
                     Image(systemName: "magnifyingglass")
                         .padding()
@@ -63,6 +68,27 @@ struct ContentView: View {
                 }
             }
 
+            // Address Suggestions
+            if !viewModel.addressSuggestions.isEmpty && searchText != "" {
+                VStack(alignment: .leading) {
+                    Text("Suggestions")
+                        .font(.headline)
+                        .padding(.horizontal)
+                    List(viewModel.addressSuggestions, id: \.self) { suggestion in
+                        Button(action: {
+                            searchText = suggestion
+                            viewModel.searchLocation(query: suggestion)
+                            viewModel.addressSuggestions = []  // Hide suggestions after selection
+                        }) {
+                            Text(suggestion)
+                                .padding()
+                        }
+                    }
+                    .frame(maxHeight: 65)  // Limit height of suggestions list
+                    .listStyle(PlainListStyle()) // Simplify list style
+                }
+            }
+
             // Map View
             Map(coordinateRegion: $viewModel.region)
                 .edgesIgnoringSafeArea(.all)
@@ -73,9 +99,7 @@ struct ContentView: View {
     }
 }
 
-
-
-
 #Preview {
     ContentView()
 }
+

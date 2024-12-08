@@ -14,8 +14,12 @@ struct ContentView: View {
     var body: some View {
         Map(coordinateRegion: $viewModel.region)
             .edgesIgnoringSafeArea(.all)
+            .onAppear {
+                viewModel.requestLocation()
+            }
     }
 }
+
 
 #Preview {
     ContentView()
